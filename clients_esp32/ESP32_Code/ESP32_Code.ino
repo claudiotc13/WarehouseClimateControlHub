@@ -10,9 +10,10 @@
 DHT dht(15, DHTTYPE);
 
 //---- WiFi settings
-const char* ssid = "IoTDEI2";
-const char* password = "#8tud3nt2024";
-
+//const char* ssid = "IoTDEI2";
+//const char* password = "#8tud3nt2024";
+const char* ssid = "Vodafone-1F01D8";
+const char* password = "7DYYUGDUDMTDYNU9";
 //---- MQTT Broker settings
 const char* mqtt_server = "370134814ab545c6ae9d743848a77f33.s1.eu.hivemq.cloud"; // replace with your broker url
 const char* mqtt_username = "comscs2324jpt45"; // replace with your broker id
@@ -22,8 +23,8 @@ const int mqtt_port = 8883;
 // here is broadcast UDP address
 // const char * udpAddress = "172.18.154.4"; //the address of the SRV01
 // const int udpPort = 8080;
-const char * udpAddress = "192.168.8.201"; //the address of the SRV02
-const int udpPort = 9999;        //the address of the SRV02
+const char * udpAddress = "192.168.1.227"; //the address of the SRV02
+const int udpPort = 8888;        //the address of the SRV02
 //create UDP instance
 WiFiUDP udp;
 
