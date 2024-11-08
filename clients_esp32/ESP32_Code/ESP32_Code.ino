@@ -10,10 +10,13 @@
 DHT dht(15, DHTTYPE);
 
 //---- WiFi settings
-//const char* ssid = "IoTDEI2";
-//const char* password = "#8tud3nt2024";
-const char* ssid = "Vodafone-1F01D8";
-const char* password = "7DYYUGDUDMTDYNU9";
+// const char* ssid = "IoTDEI2";
+// const char* password = "#8tud3nt2024";
+// const char* ssid = "Vodafone-1F01D8";
+// const char* password = "7DYYUGDUDMTDYNU9";
+const char* ssid = "MEO-CF7AD9";
+const char* password = "398DD18B34";
+
 //---- MQTT Broker settings
 const char* mqtt_server = "370134814ab545c6ae9d743848a77f33.s1.eu.hivemq.cloud"; // replace with your broker url
 const char* mqtt_username = "comscs2324jpt45"; // replace with your broker id
@@ -23,7 +26,8 @@ const int mqtt_port = 8883;
 // here is broadcast UDP address
 // const char * udpAddress = "172.18.154.4"; //the address of the SRV01
 // const int udpPort = 8080;
-const char * udpAddress = "192.168.1.227"; //the address of the SRV02
+const char * udpAddress = "192.168.1.100";  //Server Zé
+// const char * udpAddress = "192.168.1.227"; //Server Lau
 const int udpPort = 8888;        //the address of the SRV02
 //create UDP instance
 WiFiUDP udp;
@@ -35,10 +39,8 @@ PubSubClient client(espClient);
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
 char msg[MSG_BUFFER_SIZE];
-char data[100];
 char humidade[100];
 char temp[100];
-char tempind[100];
 char comando[100];
 int value = 0;
 
@@ -71,50 +73,51 @@ void loop() {
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
-    float hi = dht.computeHeatIndex(t, h, false);
 
 
 // este buffer e para testar o UDP
     uint8_t buffer[50];
 
 
-    delay(10000);
+    delay(5000);
+
     sprintf(humidade, "%f", h);
     sprintf(temp, "%f", t);
     
 
    
-      Serial.println(humidade);
-      Serial.println(temp);
+    Serial.println(humidade);
+    Serial.println(temp);
 
-      // Create JSON object for WeatherObserved data
-      StaticJsonDocument<200> doc;
-      doc["id"] = "WeatherObserved:Warehouse";
-      doc["type"] = "WeatherObserved";
-      doc["temperature"] = temp;  // Example temperature
-      doc["humidity"] = humidade;     // Example humidity
+    // Create JSON object for WeatherObserved data
+    StaticJsonDocument<200> doc;
+    doc["id"] = "WeatherObserved:Warehouse";
+    doc["type"] = "WeatherObserved";
+    doc["temperature"] = temp;  // Example temperature
+    doc["humidity"] = humidade;     // Example humidity
 
-      char jsonBuffer[256];
-      serializeJson(doc, jsonBuffer);
+    char jsonBuffer[256];
+    serializeJson(doc, jsonBuffer);
 
-      Serial.println("mensagem enviada para o broker");
+    Serial.println("mensagem enviada para o broker");
 
-     publishMessage("/comcs/g45/humidade", String(jsonBuffer), true);
+    publishMessage("/comcs/g45/humidade", String(jsonBuffer), true);
  
-  //This initializes udp and transfer buffer
-  udp.beginPacket(udpAddress, udpPort);
-  udp.write((const uint8_t*)jsonBuffer, strlen(jsonBuffer));
-  udp.endPacket();
-  memset(jsonBuffer, 0, sizeof(jsonBuffer));
-  memset(buffer, 0, 50);
-  //processing incoming packet, must be called before reading the buffer
-  udp.parsePacket();
-   if(udp.read(buffer, 50) > 0){
-    
-   Serial.print("Server to client: ");
-   Serial.println((char *)buffer);
-   memset(buffer, 0, 50);
- }
+    //This initializes udp and transfer buffer
+    udp.beginPacket(udpAddress, udpPort);
+    udp.write((const uint8_t*)jsonBuffer, strlen(jsonBuffer));
+    udp.endPacket();
+    memset(jsonBuffer, 0, sizeof(jsonBuffer));
+    memset(buffer, 0, 50);
+
+    Serial.print("Waiting for Server ACK \n");
+    //processing incoming packet, must be called before reading the buffer
+    udp.parsePacket();
+    if(udp.read(buffer, 50) > 0){
+        Serial.print("Server to client: ");
+        Serial.println((char *)buffer);
+        memset(buffer, 0, 50);
+    }
 
 
    
