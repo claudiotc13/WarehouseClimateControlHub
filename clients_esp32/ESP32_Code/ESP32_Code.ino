@@ -26,7 +26,8 @@ const int mqtt_port = 8883;
 // here is broadcast UDP address
 // const char * udpAddress = "172.18.154.4"; //the address of the SRV01
 // const int udpPort = 8080;
-const char * udpAddress = "192.168.1.100";  //Server Zé
+const char * udpAddress = "192.168.1.111";  //Server Zé
+// const char * udpAddress = "172.24.177.109";  //Server Zé2
 // const char * udpAddress = "192.168.1.227"; //Server Lau
 const int udpPort = 8888;        //the address of the SRV02
 //create UDP instance
