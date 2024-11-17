@@ -1,0 +1,65 @@
+[
+    {
+        "id": "2260bbd7c33f5623",
+        "type": "ui_chart",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "0c87c9f1f1046d47",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "chart Temp",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "50",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 790,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0c87c9f1f1046d47",
+        "type": "ui_group",
+        "name": "Temp",
+        "tab": "d3392474a17d244a",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "d3392474a17d244a",
+        "type": "ui_tab",
+        "name": "Dashboard_Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
