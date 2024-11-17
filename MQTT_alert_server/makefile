@@ -5,7 +5,7 @@ OBJFILES = main.o
 EXEC = prog.bin
 #Compilation parameters
 CP = -Wall -Wextra
-LIBS = -lmosquitto
+LIBS = -lpaho-mqtt3cs
 # regras de sufixo
 .SUFFIXES : .c .o
 # transform .c into .o ; $< -- filename
