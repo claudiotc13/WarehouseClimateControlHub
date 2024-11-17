@@ -4,6 +4,7 @@
 #include "DHT.h"
 #include <WiFiUdp.h>
 #include <ArduinoJson.h>
+#include <NTPClient.h> // NTPClient By Fabrice Weinberg 
 
 #define DHTTYPE DHT11
 
@@ -17,6 +18,10 @@ DHT dht(15, DHTTYPE);
 const char* ssid = "MEO-CF7AD9";
 const char* password = "398DD18B34";
 
+// NTP Sever Sync ESP32 Times
+const char* ntpServer = "pool.ntp.org";   // time.google.com   // pool.ntp.org
+const long utcOffsetInSeconds = 0; // Set to your timezone offset (e.g., 3600 for GMT+1)
+
 //---- MQTT Broker settings
 const char* mqtt_server = "370134814ab545c6ae9d743848a77f33.s1.eu.hivemq.cloud"; // replace with your broker url
 const char* mqtt_username = "comscs2324jpt45"; // replace with your broker id
@@ -27,11 +32,16 @@ const int mqtt_port = 8883;
 // const char * udpAddress = "172.18.154.4"; //the address of the SRV01
 // const int udpPort = 8080;
 const char * udpAddress = "192.168.1.111";  //Server Zé
+// const char * udpAddress = "192.168.8.186";  //Server Zé VM Alpine
 // const char * udpAddress = "172.24.177.109";  //Server Zé2
 // const char * udpAddress = "192.168.1.227"; //Server Lau
 const int udpPort = 8888;        //the address of the SRV02
 //create UDP instance
 WiFiUDP udp;
+
+//create NTPclient
+NTPClient timeClient(udp, ntpServer, utcOffsetInSeconds);
+static unsigned long lastSync = 0;
 
 
 WiFiClientSecure espClient;
@@ -56,6 +66,7 @@ void setup() {
         delay(500);
         Serial.print(".");
     }
+    delay(1000);
     randomSeed(micros());
     Serial.println("\nWiFi connected\nIP address: ");
     Serial.println(WiFi.localIP());
@@ -65,7 +76,21 @@ void setup() {
     client.setCallback(callback);
 
     dht.begin();
+    Serial.println("\nAQUIIIIII\n");
+    delay(2000);
+
+    timeClient.begin();
+    while (!timeClient.update()) {
+     Serial.println("Waiting for NTP synchronization...");
+     delay(1000);
+    } 
+
+    // Print the time
+    Serial.println("Time synchronized:");
+    Serial.println(timeClient.getFormattedTime()); // Display time in HH:MM:SS format
+ 
 }
+
 
 void loop() {
     if (!client.connected())
@@ -78,9 +103,15 @@ void loop() {
 
 // este buffer e para testar o UDP
     uint8_t buffer[50];
+    timeClient.update();
 
+   // delay(1000);
+    unsigned long now = timeClient.getEpochTime();
 
-    delay(5000);
+  if (now - lastSync >= 1) { // Send every second
+    lastSync = now;
+    Serial.println(timeClient.getFormattedTime()); // Display updated time every second
+
 
     sprintf(humidade, "%f", h);
     sprintf(temp, "%f", t);
@@ -119,7 +150,7 @@ void loop() {
         Serial.println((char *)buffer);
         memset(buffer, 0, 50);
     }
-
+  }
 
    
 }
