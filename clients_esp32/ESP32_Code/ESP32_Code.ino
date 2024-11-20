@@ -11,12 +11,12 @@
 DHT dht(15, DHTTYPE);
 
 //---- WiFi settings
-// const char* ssid = "IoTDEI2";
-// const char* password = "#8tud3nt2024";
+const char* ssid = "IoTDEI2";
+const char* password = "#8tud3nt2024";
 // const char* ssid = "Vodafone-1F01D8";
 // const char* password = "7DYYUGDUDMTDYNU9";
-const char* ssid = "MEO-CF7AD9";
-const char* password = "398DD18B34";
+// const char* ssid = "MEO-CF7AD9";
+// const char* password = "398DD18B34";
 
 // NTP Sever Sync ESP32 Times
 const char* ntpServer = "pool.ntp.org";   // time.google.com   // pool.ntp.org
@@ -31,8 +31,9 @@ const int mqtt_port = 8883;
 // here is broadcast UDP address
 // const char * udpAddress = "172.18.154.4"; //the address of the SRV01
 // const int udpPort = 8080;
-const char * udpAddress = "192.168.1.111";  //Server Zé
+// const char * udpAddress = "192.168.1.111";  //Server Zé
 // const char * udpAddress = "192.168.8.186";  //Server Zé VM Alpine
+const char * udpAddress = "192.168.8.223";  //Server Lau VM Alpine
 // const char * udpAddress = "172.24.177.109";  //Server Zé2
 // const char * udpAddress = "192.168.1.227"; //Server Lau
 const int udpPort = 8888;        //the address of the SRV02
@@ -99,6 +100,8 @@ void loop() {
 
     float h = dht.readHumidity();
     float t = dht.readTemperature();
+    char tempo_bom [15];
+
 
 
 // este buffer e para testar o UDP
@@ -112,7 +115,7 @@ void loop() {
     lastSync = now;
     Serial.println(timeClient.getFormattedTime()); // Display updated time every second
 
-
+    sprintf(tempo_bom, "%s",timeClient.getFormattedTime() );
     sprintf(humidade, "%f", h);
     sprintf(temp, "%f", t);
     
@@ -127,6 +130,7 @@ void loop() {
     doc["type"] = "WeatherObserved";
     doc["temperature"] = temp;  // Example temperature
     doc["humidity"] = humidade;     // Example humidity
+    doc["currenttime"]=tempo_bom;
 
     char jsonBuffer[256];
     serializeJson(doc, jsonBuffer);
