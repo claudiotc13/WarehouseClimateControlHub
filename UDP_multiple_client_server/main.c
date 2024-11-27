@@ -6,12 +6,23 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "cJSON.h"
+#include "MQTTClient.h"
 
 #define PORT 8888
 #define MAXLINE 1024
 #define ACK_MESSAGE "ACK"
 #define ARRAY_SIZE 2
 // #define MSG_CONFIRM 0 //possibly needed for MAC users
+
+//  MQTT Broker configuration
+#define MQTT_ADDRESS "ssl://370134814ab545c6ae9d743848a77f33.s1.eu.hivemq.cloud:8883"
+#define MQTT_CLIENTID "UDPtoMQTTClient"
+#define MQTT_TOPIC "/comcs/g45/UDPTESTE"
+#define MQTT_USERNAME "comscs2324jpt45"
+#define MQTT_PASSWORD "josepedro2"
+
+MQTTClient mqttClient;
+//  MQTT Broker configuration
 
 typedef struct
 {
@@ -41,6 +52,8 @@ int main()
 {
   int sockfd;
   struct sockaddr_in servaddr, cliaddr;
+
+  initMQTT();
 
   // Creating socket file descriptor
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -193,6 +206,16 @@ void *handle_client(void *arg)
     SensorData data;
     strncpy(data.time, time_str, sizeof(data.time) - 1);
     data.time[sizeof(data.time) - 1] = '\0';
+    if (temp_value > 20 || temp_value < 0)
+    {
+      send_alert_exceeded_values_temp(&temp_value);
+    }
+
+    if (humidity_value > 80 || humidity_value < 20)
+    {
+      send_alert_exceeded_values_hum(&humidity_value);
+    }
+
     data.temperature = temp_value; // Example temperature value
     data.humidity = humidity_value;
     write_to_sensor_data_1(&data);
@@ -223,6 +246,7 @@ void *handle_arduino_values(void *arg)
       float hum_diff = sensor_data_1[1].humidity - sensor_data_2[1].humidity;
       printf("Temperature difference: %.2f\n", temp_diff);
       printf("Humidity difference: %.2f\n", hum_diff);
+      // if alerta
     }
     else if (strcmp(sensor_data_1[1].time, sensor_data_2[0].time) == 0)
     {
@@ -285,3 +309,67 @@ void write_to_sensor_data_2(SensorData *data)
   sensor_data_2[1] = *data;
   // sensor_data_index_2++;
 }
+
+void send_alert_exceeded_values_temp(float *temp_value)
+{
+  char alert_message[50] = "Temperature value exceeded the limits: \0";
+  publishToMQTT(&alert_message);
+}
+
+void send_alert_exceeded_values_hum(float *humidity_value)
+{
+  // send alert to client
+}
+
+//  MQTT Communication
+void publishToMQTT(const char *payload)
+{
+  MQTTClient_message pubmsg = MQTTClient_message_initializer;
+  pubmsg.payload = (void *)payload;
+  pubmsg.payloadlen = strlen(payload);
+  pubmsg.qos = 0;
+  pubmsg.retained = 0;
+
+  MQTTClient_deliveryToken token;
+  MQTTClient_publishMessage(mqttClient, MQTT_TOPIC, &pubmsg, &token);
+  MQTTClient_waitForCompletion(mqttClient, token, 1000L); // Wait for message delivery
+  printf("Published message: %s\n", payload);
+}
+//  MQTT Communication
+
+//  MQTT Communication
+void initMQTT()
+{
+
+  MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+
+  MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+
+  // Specify the paths to the necessary certificates and keys
+  // ssl_opts.trustStore = "/home/root/myCA/myCA.crt";  // CA certificate (to verify the broker's certificate)
+  // ssl_opts.keyStore = "/home/root/myCA/certs/server.crt";  // Client certificate (if client authentication is required)
+  // ssl_opts.privateKey = "/home/root/myCA/private/server.key";  // Client private key (if client authentication is required)
+  // ssl_opts.verify = 0;  // Enable server certificate verification
+
+  MQTTClient_create(&mqttClient, MQTT_ADDRESS, MQTT_CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+
+  conn_opts.keepAliveInterval = 20;
+  conn_opts.cleansession = 1;
+
+  conn_opts.username = MQTT_USERNAME;
+  conn_opts.password = MQTT_PASSWORD;
+
+  ssl_opts.enableServerCertAuth = 1;
+
+  conn_opts.ssl = &ssl_opts;
+
+  // MQTTClient_create(&mqttClient, MQTT_ADDRESS, MQTT_CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+
+  if (MQTTClient_connect(mqttClient, &conn_opts) != MQTTCLIENT_SUCCESS)
+  {
+    fprintf(stderr, "Failed to connect to MQTT broker.\n");
+    exit(EXIT_FAILURE);
+  }
+  printf("Connected to MQTT broker at %s\n", MQTT_ADDRESS);
+}
+//  MQTT Communication
