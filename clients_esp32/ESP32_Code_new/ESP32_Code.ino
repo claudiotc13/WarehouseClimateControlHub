@@ -19,7 +19,7 @@ const char* ssid = "MEO-CF7AD9";
 const char* password = "398DD18B34";
 
 // NTP Sever Sync ESP32 Times
-const char* ntpServer = "time.google.com";   // time.google.com   // pool.ntp.org
+const char* ntpServer = "time.google.com";   // time.google.com   // pool.ntp.org  // time.nist.gov
 const long utcOffsetInSeconds = 0; // Set to your timezone offset (e.g., 3600 for GMT+1)
 
 //---- MQTT Broker settings
@@ -41,7 +41,7 @@ const int udpPort = 8888;        //the address of the SRV02
 WiFiUDP udp;
 
 //create NTPclient
-NTPClient timeClient(udp, ntpServer, utcOffsetInSeconds);
+NTPClient timeClient(udp, ntpServer, utcOffsetInSeconds, 30000);
 static unsigned long lastSync = 0;
 
 
@@ -81,6 +81,7 @@ void setup() {
     delay(2000);
 
     timeClient.begin();
+    delay(1000);
     while (!timeClient.update()) {
      Serial.println("Waiting for NTP synchronization...");
      delay(1000);
@@ -90,6 +91,8 @@ void setup() {
     Serial.println("Time synchronized:");
     Serial.println(timeClient.getFormattedTime()); // Display time in HH:MM:SS format
  
+
+    strcpy(comando, "start");
 }
 
 
@@ -104,14 +107,14 @@ void loop() {
 
 
 
-// este buffer e para testar o UDP
+    // Buffer to test UDP
     uint8_t buffer[50];
     timeClient.begin();
     timeClient.update();
 
    // delay(1000);
     unsigned long now = timeClient.getEpochTime();
-
+if (strcmp(comando, "start") == 0) {
   if (now - lastSync >= 1) { // Send every second
     lastSync = now;
     Serial.println(timeClient.getFormattedTime()); // Display updated time every second
@@ -135,12 +138,22 @@ void loop() {
 
     char jsonBuffer[256];
 
-    serializeJson(doc, jsonBuffer);
+    StaticJsonDocument<200> doc2;
+    doc2["id"] = "LAU";
+    doc2["type"] = "WeatherObserved";
+    doc2["temperature"] = temp;  // Example temperature
+    doc2["humidity"] = humidade;     // Example humidity
+    doc2["currenttime"]=tempo_bom;
 
+    char jsonBuffer2[256];
+
+    serializeJson(doc, jsonBuffer);
+    serializeJson(doc2, jsonBuffer2);
 
     Serial.println("mensagem enviada para o broker");
 
     publishMessage("/comcs/g45/humidade", String(jsonBuffer), true);
+     publishMessage("/comcs/g45/humidade", String(jsonBuffer2), true);
  
     //This initializes udp and transfer buffer
     udp.beginPacket(udpAddress, udpPort);
@@ -153,13 +166,16 @@ void loop() {
     //processing incoming packet, must be called before reading the buffer
     udp.parsePacket();
     if(udp.read(buffer, 50) > 0){
-        Serial.print("Server to client: ");
-        Serial.println((char *)buffer);
-        memset(buffer, 0, 50);
+      Serial.print("Server to client: ");
+      Serial.println((char *)buffer);
+      memset(buffer, 0, 50);
     }
   }
+} else if (strcmp(comando, "stop") == 0) {
+    Serial.println("Envio de mensagens parado até novo comando");
+    delay(5000);
+  }
 
-   
 }
 
 void reconnect() {
