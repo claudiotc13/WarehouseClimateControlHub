@@ -130,7 +130,7 @@ if (strcmp(comando, "start") == 0) {
 
     // Create JSON object for WeatherObserved data
     StaticJsonDocument<200> doc;
-    doc["id"] = "ZE";
+    doc["id"] = "LAU";
     doc["type"] = "WeatherObserved";
     doc["temperature"] = temp;  // Example temperature
     doc["humidity"] = humidade;     // Example humidity
