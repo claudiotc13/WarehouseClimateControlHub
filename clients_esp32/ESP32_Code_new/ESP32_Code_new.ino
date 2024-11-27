@@ -11,12 +11,12 @@
 DHT dht(15, DHTTYPE);
 
 //---- WiFi settings
-// const char* ssid = "IoTDEI2";
-// const char* password = "#8tud3nt2024";
+const char* ssid = "IoTDEI2";
+const char* password = "#8tud3nt2024";
 // const char* ssid = "Vodafone-1F01D8";
 // const char* password = "7DYYUGDUDMTDYNU9";
-const char* ssid = "MEO-CF7AD9";
-const char* password = "398DD18B34";
+// const char* ssid = "MEO-CF7AD9";
+// const char* password = "398DD18B34";
 
 // NTP Sever Sync ESP32 Times
 const char* ntpServer = "time.google.com";   // time.google.com   // pool.ntp.org  // time.nist.gov
@@ -138,22 +138,22 @@ if (strcmp(comando, "start") == 0) {
 
     char jsonBuffer[256];
 
-    StaticJsonDocument<200> doc2;
-    doc2["id"] = "LAU";
-    doc2["type"] = "WeatherObserved";
-    doc2["temperature"] = temp;  // Example temperature
-    doc2["humidity"] = humidade;     // Example humidity
-    doc2["currenttime"]=tempo_bom;
+    //StaticJsonDocument<200> doc2;
+    //doc2["id"] = "LAU";
+    //doc2["type"] = "WeatherObserved";
+    //doc2["temperature"] = temp;  // Example temperature
+    //doc2["humidity"] = humidade;     // Example humidity
+    //doc2["currenttime"]=tempo_bom;
 
-    char jsonBuffer2[256];
+    //char jsonBuffer2[256];
 
     serializeJson(doc, jsonBuffer);
-    serializeJson(doc2, jsonBuffer2);
+    //serializeJson(doc2, jsonBuffer2);
 
     Serial.println("mensagem enviada para o broker");
 
     publishMessage("/comcs/g45/humidade", String(jsonBuffer), true);
-     publishMessage("/comcs/g45/humidade", String(jsonBuffer2), true);
+     //publishMessage("/comcs/g45/humidade", String(jsonBuffer2), true);
  
     //This initializes udp and transfer buffer
     udp.beginPacket(udpAddress, udpPort);
