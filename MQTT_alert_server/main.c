@@ -5,7 +5,9 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "MQTTClient.h"
+//  MQTT Broker configuration
+#include "MQTTClient.h"     
+//  MQTT Broker configuration        
 
 #define PORT 8888
 #define MAX_MESSAGE_SIZE 1024
@@ -18,7 +20,8 @@
 #define MQTT_USERNAME  "comscs2324jpt45"
 #define MQTT_PASSWORD  "josepedro2"
 
-MQTTClient mqttClient;
+MQTTClient mqttClient; 
+//  MQTT Broker configuration
 
 typedef struct
 {
@@ -32,6 +35,7 @@ pthread_t threads[MAX_CLIENTS];
 int clientCount = 0;
 // pthread_mutex_t mutex;
 
+//  MQTT Communication
 void publishToMQTT(const char *payload) {
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     pubmsg.payload = (void *)payload;
@@ -44,10 +48,10 @@ void publishToMQTT(const char *payload) {
     MQTTClient_waitForCompletion(mqttClient, token, 1000L);  // Wait for message delivery
     printf("Published message: %s\n", payload);
 }
+//  MQTT Communication
 
 
-
-
+//  MQTT Communication
 void initMQTT() {
 
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
@@ -82,7 +86,7 @@ void initMQTT() {
     }
     printf("Connected to MQTT broker at %s\n", MQTT_ADDRESS);
 }
-
+//  MQTT Communication
 
 
 void printClientInfo(int clientIndex) {
@@ -118,7 +122,10 @@ void *handleClient(void *arg)
     buffer[bytesRead] = '\0';
     printf("Msg recebida do Client %d: %s\n", id + 1, buffer);
 
+    //  MQTT Communication
     publishToMQTT(buffer);
+    //  MQTT Communication
+
 
     // Broadcast the received message to all clients
     /*
@@ -148,10 +155,11 @@ int main()
   socklen_t clientLen = sizeof(struct sockaddr_in);
   ssize_t bytesRead;
 
-
+  //  MQTT Communication
   // Initialize MQTT connection
   initMQTT();
-
+  //  MQTT Communication
+  
   // Create socket
   if ((serverSocket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
   {
