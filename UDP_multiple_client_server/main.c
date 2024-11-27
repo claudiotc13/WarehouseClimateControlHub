@@ -50,6 +50,8 @@ void send_alert_exceeded_values_temp(float *temp_value);
 void initMQTT();
 void publishToMQTT(const char *payload);
 void send_alert_exceeded_values_hum(float *humidity_value);
+void write_to_sensor_data_1(SensorData *data);
+void write_to_sensor_data_2(SensorData *data);
 
 // Driver code
 int main()
