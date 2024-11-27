@@ -46,6 +46,10 @@ int sensor_data_index_2 = 0; // Global index for sensor_data_array_2
 
 void *handle_client(void *arg);
 void *handle_arduino_values(void *arg);
+void send_alert_exceeded_values_temp(float *temp_value);
+void initMQTT();
+void publishToMQTT(const char *payload);
+void send_alert_exceeded_values_hum(float *humidity_value);
 
 // Driver code
 int main()
