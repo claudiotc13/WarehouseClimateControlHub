@@ -11,12 +11,14 @@
 DHT dht(15, DHTTYPE);
 
 //---- WiFi settings
-const char* ssid = "IoTDEI2";
-const char* password = "#8tud3nt2024";
+//const char* ssid = "IoTDEI2";
+//const char* password = "#8tud3nt2024";
 // const char* ssid = "Vodafone-1F01D8";
 // const char* password = "7DYYUGDUDMTDYNU9";
 // const char* ssid = "MEO-CF7AD9";
 // const char* password = "398DD18B34";
+const char* ssid = "NOS-45C4";
+const char* password = "6YM3RY6T";
 
 // NTP Sever Sync ESP32 Times
 const char* ntpServer = "time.google.com";   // time.google.com   // pool.ntp.org  // time.nist.gov
@@ -33,7 +35,7 @@ const int mqtt_port = 8883;
 // const int udpPort = 8080;
 // const char * udpAddress = "192.168.1.111";  //Server Zé
 // const char * udpAddress = "192.168.8.186";  //Server Zé VM Alpine
-const char * udpAddress = "192.168.8.186";  //Server Lau VM Alpine
+const char * udpAddress = "192.168.1.107";  //Server Lau VM Alpine
 // const char * udpAddress = "172.24.177.109";  //Server Zé2
 // const char * udpAddress = "192.168.1.227"; //Server Lau
 const int udpPort = 8888;        //the address of the SRV02
@@ -130,7 +132,7 @@ if (strcmp(comando, "start") == 0) {
 
     // Create JSON object for WeatherObserved data
     StaticJsonDocument<200> doc;
-    doc["id"] = "LAU";
+    doc["id"] = "ZE";
     doc["type"] = "WeatherObserved";
     doc["temperature"] = temp;  // Example temperature
     doc["humidity"] = humidade;     // Example humidity
