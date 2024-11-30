@@ -8,22 +8,12 @@
 #include "cJSON.h"
 #include "MQTTClient.h"
 #include <math.h>
+#include "mqtt_header.h"
 
 #define PORT 8888
 #define MAXLINE 1024
 #define ACK_MESSAGE "ACK"
 #define ARRAY_SIZE 2
-// #define MSG_CONFIRM 0 //possibly needed for MAC users
-
-//  MQTT Broker configuration
-#define MQTT_ADDRESS "ssl://370134814ab545c6ae9d743848a77f33.s1.eu.hivemq.cloud:8883"
-#define MQTT_CLIENTID "UDPtoMQTTClient"
-#define MQTT_TOPIC "/comcs/g45/UDPTESTE"
-#define MQTT_USERNAME "comscs2324jpt45"
-#define MQTT_PASSWORD "josepedro2"
-
-MQTTClient mqttClient;
-//  MQTT Broker configuration
 
 typedef struct
 {
@@ -47,6 +37,7 @@ int sensor_data_index_2 = 0; // Global index for sensor_data_array_2
 
 int arduino1_connected = 0;
 int arduino2_connected = 0;
+int both_connected = 0;
 
 void *handle_client(void *arg);
 void *handle_arduino_values(void *arg);
@@ -229,7 +220,7 @@ void *handle_client(void *arg)
       send_alert_exceeded_values_hum(&humidity_value);
     }
 
-    data.temperature = temp_value; // Example temperature value
+    data.temperature = temp_value;
     data.humidity = humidity_value;
     write_to_sensor_data_1(&data);
   }
@@ -245,6 +236,11 @@ void *handle_client(void *arg)
     write_to_sensor_data_2(&data);
   }
 
+  if (arduino1_connected && arduino2_connected)
+  {
+    both_connected = 1;
+  }
+
   cJSON_Delete(json);
 
   free(client_data);
@@ -253,7 +249,13 @@ void *handle_client(void *arg)
 
 void *handle_arduino_values(void *arg)
 {
-  while (arduino1_connected == 1 && arduino2_connected == 1)
+  // wait till both arduinos are connected
+  while (!both_connected && sensor_data_1[1].time == NULL && sensor_data_2[1].time == NULL)
+  {
+    usleep(100000);
+  }
+
+  while (1)
   {
     if (strcmp(sensor_data_1[1].time, sensor_data_2[1].time) == 0)
     {
@@ -329,44 +331,4 @@ void handle_differences(float temp1, float temp2, float hum1, float hum2)
     sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
     publishToMQTT(alert_message, &topicHum);
   }
-}
-
-void publishToMQTT(const char *payload, const char *topic)
-{
-  MQTTClient_message pubmsg = MQTTClient_message_initializer;
-  pubmsg.payload = (void *)payload;
-  pubmsg.payloadlen = strlen(payload);
-  pubmsg.qos = 0;
-  pubmsg.retained = 0;
-
-  MQTTClient_deliveryToken token;
-  MQTTClient_publishMessage(mqttClient, topic, &pubmsg, &token);
-  MQTTClient_waitForCompletion(mqttClient, token, 1000L); // Wait for message delivery
-}
-
-void initMQTT()
-{
-
-  MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-
-  MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
-
-  MQTTClient_create(&mqttClient, MQTT_ADDRESS, MQTT_CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-
-  conn_opts.keepAliveInterval = 20;
-  conn_opts.cleansession = 1;
-
-  conn_opts.username = MQTT_USERNAME;
-  conn_opts.password = MQTT_PASSWORD;
-
-  ssl_opts.enableServerCertAuth = 1;
-
-  conn_opts.ssl = &ssl_opts;
-
-  if (MQTTClient_connect(mqttClient, &conn_opts) != MQTTCLIENT_SUCCESS)
-  {
-    fprintf(stderr, "Failed to connect to MQTT broker.\n");
-    exit(EXIT_FAILURE);
-  }
-  printf("Connected to MQTT broker at %s\n", MQTT_ADDRESS);
 }

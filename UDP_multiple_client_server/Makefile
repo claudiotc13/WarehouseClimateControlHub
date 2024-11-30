@@ -7,7 +7,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -pthread
 
 # Source files
-SRCS = main.c cJSON.c
+SRCS = main.c cJSON.c mqtt_handler.c
 
 # Output executable
 TARGET = main
@@ -17,7 +17,7 @@ all: $(TARGET)
 
 # Link the target executable
 $(TARGET): $(SRCS)
-	$(CC) $(CFLAGS) -lpthread -o $(TARGET) $(SRCS)
+	$(CC) $(CFLAGS) -lpthread -o $(TARGET) $(SRCS) -lpaho-mqtt3cs
 
 # Clean rule to remove the executable
 clean:
