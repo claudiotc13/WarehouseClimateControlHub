@@ -45,6 +45,9 @@ SensorData sensor_data_2[ARRAY_SIZE];
 int sensor_data_index_1 = 0; // Global index for sensor_data_array_1
 int sensor_data_index_2 = 0; // Global index for sensor_data_array_2
 
+int arduino1_connected = 0;
+int arduino2_connected = 0;
+
 void *handle_client(void *arg);
 void *handle_arduino_values(void *arg);
 void send_alert_exceeded_values_temp(float *temp_value);
@@ -53,6 +56,7 @@ void publishToMQTT(const char *payload, const char *topic);
 void send_alert_exceeded_values_hum(float *humidity_value);
 void write_to_sensor_data_1(SensorData *data);
 void write_to_sensor_data_2(SensorData *data);
+void handle_differences(float temp1, float temp2, float hum1, float hum2);
 
 // Driver code
 int main()
@@ -211,6 +215,7 @@ void *handle_client(void *arg)
   if (strcmp(id_str, "LAU") == 0)
   {
     printf("LAU ENTROU\n");
+    arduino1_connected = 1;
     SensorData data;
     strncpy(data.time, time_str, sizeof(data.time) - 1);
     data.time[sizeof(data.time) - 1] = '\0';
@@ -231,6 +236,7 @@ void *handle_client(void *arg)
   else if (strcmp(id_str, "ZE") == 0)
   {
     printf("ZE ENTROU\n");
+    arduino2_connected = 1;
     SensorData data;
     strncpy(data.time, time_str, sizeof(data.time) - 1);
     data.time[sizeof(data.time) - 1] = '\0';
@@ -247,111 +253,27 @@ void *handle_client(void *arg)
 
 void *handle_arduino_values(void *arg)
 {
-  while (1)
+  while (arduino1_connected == 1 && arduino2_connected == 1)
   {
-    char topicTemp[50] = "/comcs/g45/temperatureDiffAlert";
-    char topicHum[50] = "/comcs/g45/humidityDiffAlert";
     if (strcmp(sensor_data_1[1].time, sensor_data_2[1].time) == 0)
     {
       printf("first if\n");
-      float temp_diff = fabs(sensor_data_1[1].temperature - sensor_data_2[1].temperature);
-      // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
-      // printf("Temperature sensor 2: %.2f\n", sensor_data_2[1].humidity);
-      float hum_diff = fabs(sensor_data_1[1].humidity - sensor_data_2[1].humidity);
-      printf("Temperature difference: %.2f\n", temp_diff);
-      printf("Humidity difference: %.2f\n", hum_diff);
-      if (temp_diff > 2)
-      {
-        char alert_message[50];
-        sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message, &topicTemp);
-      }
-
-      if (hum_diff > 5)
-      {
-        char alert_message[50];
-        sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message, &topicHum);
-      }
-      // if alerta
+      handle_differences(sensor_data_1[1].temperature, sensor_data_2[1].temperature, sensor_data_1[1].humidity, sensor_data_2[1].humidity);
     }
     else if (strcmp(sensor_data_1[1].time, sensor_data_2[0].time) == 0)
     {
       printf("second if\n");
-      float temp_diff = fabs(sensor_data_1[1].temperature - sensor_data_2[0].temperature);
-      // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
-      // printf("Temperature sensor 2: %.2f\n", sensor_data_2[0].humidity);
-      float hum_diff = fabs(sensor_data_1[1].humidity - sensor_data_2[0].humidity);
-      printf("Temperature difference: %.2f\n", temp_diff);
-      printf("Humidity difference: %.2f\n", hum_diff);
-
-      if (temp_diff > 2)
-      {
-        char alert_message[50];
-        sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message, &topicTemp);
-      }
-
-      if (hum_diff > 5)
-      {
-        char alert_message[50];
-        sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message, &topicHum);
-      }
+      handle_differences(sensor_data_1[1].temperature, sensor_data_2[0].temperature, sensor_data_1[1].humidity, sensor_data_2[0].humidity);
     }
     else if (strcmp(sensor_data_1[0].time, sensor_data_2[1].time) > 0)
     {
       printf("third if\n");
-      float temp_diff = fabs(sensor_data_1[0].temperature - sensor_data_2[1].temperature);
-      float hum_diff = fabs(sensor_data_1[0].humidity - sensor_data_2[1].humidity);
-      // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
-      // printf("Temperature sensor 2: %.2f\n", sensor_data_2[0].humidity);
-      printf("Temperature difference: %.2f\n", temp_diff);
-      printf("Humidity difference: %.2f\n", hum_diff);
-
-      if (temp_diff > 2)
-      {
-        char alert_message[50] = "Nigga";
-        // sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message, &topicTemp);
-      }
-
-      if (hum_diff > 5)
-      {
-        char alert_message[50] = "ola";
-        // sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message, &topicHum);
-      }
+      handle_differences(sensor_data_1[0].temperature, sensor_data_2[1].temperature, sensor_data_1[0].humidity, sensor_data_2[1].humidity);
     }
-    // ISTO É CAPAZ DE ESTAR A FAZER REPETIDO!!!!!
-    // SE CALHAR APAGAR ESTE IF
-    // IMPORTANTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-    // NAO ESUQECERRRRRRRRRRRRRRRRRRRRRRRRRR
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // ALERTA ALERTA ALERTA ALERTA ALERTA
     else if (strcmp(sensor_data_1[0].time, sensor_data_2[0].time) > 0)
     {
       printf("fourth if\n");
-      float temp_diff = fabs(sensor_data_1[0].temperature - sensor_data_2[0].temperature);
-      // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
-      // printf("Temperature sensor 2: %.2f\n", sensor_data_2[0].humidity);
-      float hum_diff = fabs(sensor_data_1[0].humidity - sensor_data_2[0].humidity);
-      printf("Temperature difference: %.2f\n", temp_diff);
-      printf("Humidity difference: %.2f\n", hum_diff);
-
-      if (temp_diff > 2)
-      {
-        char alert_message[50];
-        sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message, &topicTemp);
-      }
-
-      if (hum_diff > 5)
-      {
-        char alert_message[50];
-        sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message, &topicHum);
-      }
+      handle_differences(sensor_data_1[0].temperature, sensor_data_2[0].temperature, sensor_data_1[0].humidity, sensor_data_2[0].humidity);
     }
   }
 
@@ -382,6 +304,31 @@ void send_alert_exceeded_values_hum(float *humidity_value)
   char alert_message[50] = "Humidity value exceeded the limits: \0";
   char topic[50] = "/comcs/g45/humidityAlert";
   publishToMQTT(&alert_message, &topic);
+}
+
+void handle_differences(float temp1, float temp2, float hum1, float hum2)
+{
+  char topicTemp[50] = "/comcs/g45/temperatureDiffAlert";
+  char topicHum[50] = "/comcs/g45/humidityDiffAlert";
+  float temp_diff = fabs(temp1 - temp2);
+  float hum_diff = fabs(hum1 - hum2);
+
+  printf("Temperature difference: %.2f\n", temp_diff);
+  printf("Humidity difference: %.2f\n", hum_diff);
+
+  if (temp_diff > 2)
+  {
+    char alert_message[50];
+    sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
+    publishToMQTT(alert_message, &topicTemp);
+  }
+
+  if (hum_diff > 5)
+  {
+    char alert_message[50];
+    sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
+    publishToMQTT(alert_message, &topicHum);
+  }
 }
 
 void publishToMQTT(const char *payload, const char *topic)
