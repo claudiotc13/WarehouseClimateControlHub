@@ -49,7 +49,7 @@ void *handle_client(void *arg);
 void *handle_arduino_values(void *arg);
 void send_alert_exceeded_values_temp(float *temp_value);
 void initMQTT();
-void publishToMQTT(const char *payload);
+void publishToMQTT(const char *payload, const char *topic);
 void send_alert_exceeded_values_hum(float *humidity_value);
 void write_to_sensor_data_1(SensorData *data);
 void write_to_sensor_data_2(SensorData *data);
@@ -249,8 +249,11 @@ void *handle_arduino_values(void *arg)
 {
   while (1)
   {
+    char topicTemp[50] = "/comcs/g45/temperatureDiffAlert";
+    char topicHum[50] = "/comcs/g45/humidityDiffAlert";
     if (strcmp(sensor_data_1[1].time, sensor_data_2[1].time) == 0)
     {
+      printf("first if\n");
       float temp_diff = fabs(sensor_data_1[1].temperature - sensor_data_2[1].temperature);
       // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
       // printf("Temperature sensor 2: %.2f\n", sensor_data_2[1].humidity);
@@ -261,19 +264,20 @@ void *handle_arduino_values(void *arg)
       {
         char alert_message[50];
         sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicTemp);
       }
 
       if (hum_diff > 5)
       {
         char alert_message[50];
         sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicHum);
       }
       // if alerta
     }
     else if (strcmp(sensor_data_1[1].time, sensor_data_2[0].time) == 0)
     {
+      printf("second if\n");
       float temp_diff = fabs(sensor_data_1[1].temperature - sensor_data_2[0].temperature);
       // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
       // printf("Temperature sensor 2: %.2f\n", sensor_data_2[0].humidity);
@@ -285,18 +289,19 @@ void *handle_arduino_values(void *arg)
       {
         char alert_message[50];
         sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicTemp);
       }
 
       if (hum_diff > 5)
       {
         char alert_message[50];
         sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicHum);
       }
     }
     else if (strcmp(sensor_data_1[0].time, sensor_data_2[1].time) > 0)
     {
+      printf("third if\n");
       float temp_diff = fabs(sensor_data_1[0].temperature - sensor_data_2[1].temperature);
       float hum_diff = fabs(sensor_data_1[0].humidity - sensor_data_2[1].humidity);
       // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
@@ -308,18 +313,25 @@ void *handle_arduino_values(void *arg)
       {
         char alert_message[50] = "Nigga";
         // sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicTemp);
       }
 
       if (hum_diff > 5)
       {
         char alert_message[50] = "ola";
         // sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicHum);
       }
     }
+    // ISTO É CAPAZ DE ESTAR A FAZER REPETIDO!!!!!
+    // SE CALHAR APAGAR ESTE IF
+    // IMPORTANTEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+    // NAO ESUQECERRRRRRRRRRRRRRRRRRRRRRRRRR
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ALERTA ALERTA ALERTA ALERTA ALERTA
     else if (strcmp(sensor_data_1[0].time, sensor_data_2[0].time) > 0)
     {
+      printf("fourth if\n");
       float temp_diff = fabs(sensor_data_1[0].temperature - sensor_data_2[0].temperature);
       // printf("Temperature sensor 1: %.2f\n", sensor_data_1[1].humidity);
       // printf("Temperature sensor 2: %.2f\n", sensor_data_2[0].humidity);
@@ -331,14 +343,14 @@ void *handle_arduino_values(void *arg)
       {
         char alert_message[50];
         sprintf(alert_message, "Temperature difference exceeded %.2f", temp_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicTemp);
       }
 
       if (hum_diff > 5)
       {
         char alert_message[50];
         sprintf(alert_message, "Humidity difference exceeded %.2f", hum_diff);
-        publishToMQTT(&alert_message);
+        publishToMQTT(&alert_message, &topicHum);
       }
     }
   }
@@ -349,34 +361,30 @@ void *handle_arduino_values(void *arg)
 void write_to_sensor_data_1(SensorData *data)
 {
   sensor_data_1[0] = sensor_data_1[1];
-  // printf("Sensor last: %s\n", sensor_data_1[0]);
   sensor_data_1[1] = *data;
-  // printf("Sensor current: %s\n", sensor_data_1[1]);
-  //  sensor_data_index_1++;
 }
 
 void write_to_sensor_data_2(SensorData *data)
 {
   sensor_data_2[0] = sensor_data_2[1];
-  // printf("Sensor last: %s\n", sensor_data_2[0]);
   sensor_data_2[1] = *data;
-  // printf("Sensor current: %s\n", sensor_data_2[1]);
-  //   sensor_data_index_2++;
 }
 
 void send_alert_exceeded_values_temp(float *temp_value)
 {
   char alert_message[50] = "Temperature value exceeded the limits: \0";
-  publishToMQTT(&alert_message);
+  char topic[50] = "/comcs/g45/temperatureAlert";
+  publishToMQTT(&alert_message, &topic);
 }
 
 void send_alert_exceeded_values_hum(float *humidity_value)
 {
-  // send alert to client
+  char alert_message[50] = "Humidity value exceeded the limits: \0";
+  char topic[50] = "/comcs/g45/humidityAlert";
+  publishToMQTT(&alert_message, &topic);
 }
 
-//  MQTT Communication
-void publishToMQTT(const char *payload)
+void publishToMQTT(const char *payload, const char *topic)
 {
   MQTTClient_message pubmsg = MQTTClient_message_initializer;
   pubmsg.payload = (void *)payload;
@@ -385,25 +393,16 @@ void publishToMQTT(const char *payload)
   pubmsg.retained = 0;
 
   MQTTClient_deliveryToken token;
-  MQTTClient_publishMessage(mqttClient, MQTT_TOPIC, &pubmsg, &token);
+  MQTTClient_publishMessage(mqttClient, topic, &pubmsg, &token);
   MQTTClient_waitForCompletion(mqttClient, token, 1000L); // Wait for message delivery
-  // printf("Published message: %s\n", payload);
 }
-//  MQTT Communication
 
-//  MQTT Communication
 void initMQTT()
 {
 
   MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 
   MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
-
-  // Specify the paths to the necessary certificates and keys
-  // ssl_opts.trustStore = "/home/root/myCA/myCA.crt";  // CA certificate (to verify the broker's certificate)
-  // ssl_opts.keyStore = "/home/root/myCA/certs/server.crt";  // Client certificate (if client authentication is required)
-  // ssl_opts.privateKey = "/home/root/myCA/private/server.key";  // Client private key (if client authentication is required)
-  // ssl_opts.verify = 0;  // Enable server certificate verification
 
   MQTTClient_create(&mqttClient, MQTT_ADDRESS, MQTT_CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 
@@ -417,8 +416,6 @@ void initMQTT()
 
   conn_opts.ssl = &ssl_opts;
 
-  // MQTTClient_create(&mqttClient, MQTT_ADDRESS, MQTT_CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-
   if (MQTTClient_connect(mqttClient, &conn_opts) != MQTTCLIENT_SUCCESS)
   {
     fprintf(stderr, "Failed to connect to MQTT broker.\n");
@@ -426,4 +423,3 @@ void initMQTT()
   }
   printf("Connected to MQTT broker at %s\n", MQTT_ADDRESS);
 }
-//  MQTT Communication
