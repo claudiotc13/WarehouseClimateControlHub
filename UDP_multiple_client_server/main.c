@@ -231,6 +231,15 @@ void *handle_client(void *arg)
     SensorData data;
     strncpy(data.time, time_str, sizeof(data.time) - 1);
     data.time[sizeof(data.time) - 1] = '\0';
+    if (temp_value > 50 || temp_value < 0)
+    {
+      send_alert_exceeded_values_temp(&temp_value);
+    }
+
+    if (humidity_value > 80 || humidity_value < 20)
+    {
+      send_alert_exceeded_values_hum(&humidity_value);
+    }
     data.temperature = temp_value;
     data.humidity = humidity_value;
     write_to_sensor_data_2(&data);
@@ -249,7 +258,7 @@ void *handle_client(void *arg)
 
 void *handle_arduino_values(void *arg)
 {
-  // wait till both arduinos are connected
+  // wait till both arduinos are connected and have sent data
   while (!both_connected && sensor_data_1[1].time == NULL && sensor_data_2[1].time == NULL)
   {
     usleep(100000);
