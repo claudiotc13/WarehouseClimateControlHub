@@ -1,0 +1,36 @@
+enable bridge adapter in the VM definitions
+
+
+--- install sudo in the Virtual machine:
+
+
+apk update
+apk add sudo
+
+apk add --no-cache build-base cmake git
+
+
+
+--- install openssl:
+
+sudo apk add openssl-dev
+
+
+---clone git repository:
+
+sudo git clone https://github.com/eclipse/paho.mqtt.c.git
+
+
+---go to repository and run the commands:
+
+cd paho.mqtt.c
+
+cmake -Bbuild -H. -DPAHO_WITH_SSL=ON -DPAHO_BUILD_STATIC=ON -DPAHO_BUILD_SHARED=ON
+
+cmake --build build/ --target install
+
+
+---go to the folder of your main.c and compile it:
+
+gcc main.c -lpaho-mqtt3cs -o main
+

@@ -7,4 +7,4 @@ make
 sudo make install
 
 compilar
-gcc main.c -l paho-mqtt3cs -o main
+gcc main.c -lpaho-mqtt3cs -o main
