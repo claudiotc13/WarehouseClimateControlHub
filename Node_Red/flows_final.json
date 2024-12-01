@@ -1,0 +1,1112 @@
+[
+    {
+        "id": "e5baf14b09455479",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "1548c33e77b27c4d",
+        "type": "mqtt in",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "/comcs/g45/humidade",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "7f2d9564175f3903",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 220,
+        "wires": [
+            [
+                "d5342be1fa727bd1",
+                "f59d44fa3df7b9bf"
+            ]
+        ]
+    },
+    {
+        "id": "f59d44fa3df7b9bf",
+        "type": "json",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": true,
+        "x": 450,
+        "y": 140,
+        "wires": [
+            [
+                "21412d160b679aa2",
+                "b31c33f4bc2e8aa0"
+            ]
+        ]
+    },
+    {
+        "id": "ab82d6c1281725a5",
+        "type": "mqtt in",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "/comcs/g45/temperatureAlert",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "7f2d9564175f3903",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 460,
+        "wires": [
+            [
+                "6256584a25dddf37"
+            ]
+        ]
+    },
+    {
+        "id": "11b93a8e171de6a3",
+        "type": "ui_chart",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "0c87c9f1f1046d47",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Temperature Graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": true,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1030,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f34ae02a8e83375b",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Temperature both ESP32",
+        "func": "// Retrieve stored data or initialize if it doesn't exist\nlet chartDataTemp = flow.get('chartDataTemp') || {\n    temperature: [],\n    time: [],\n    formattedTime: []  // New array to store the human-readable time\n};\n\n// Parse incoming data\nlet temperature = parseFloat(msg.payload.temperature);\nlet timestamp = new Date().getTime(); // Get the current timestamp in milliseconds\n\n// Convert the Unix timestamp to a human-readable format (optional, for display only)\nlet formattedTime = new Date(timestamp).toLocaleTimeString();  // // Time stamp in readable format\n\n// Add the new data point\nchartDataTemp.temperature.push(temperature);\nchartDataTemp.time.push(timestamp);  // Store the raw Unix timestamp for correct alignment\nchartDataTemp.formattedTime.push(formattedTime);  // Store the human-readable time\n\n// Save updated data back to the flow context\nflow.set('chartDataTemp', chartDataTemp);\n\n// Format data for the chart node\nmsg.payload = [\n    {\n        series: [\"Temperature\"],\n        data: [chartDataTemp.temperature],  // All stored temperature values\n        labels: chartDataTemp.formattedTime\n    }\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 320,
+        "wires": [
+            [
+                "11b93a8e171de6a3"
+            ]
+        ]
+    },
+    {
+        "id": "d5342be1fa727bd1",
+        "type": "json",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": true,
+        "x": 490,
+        "y": 340,
+        "wires": [
+            [
+                "f34ae02a8e83375b",
+                "98ace561aa2e17f8"
+            ]
+        ]
+    },
+    {
+        "id": "98ace561aa2e17f8",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Humidity both ESP32",
+        "func": "// Retrieve stored data or initialize if it doesn't exist\nlet chartDataHumid = flow.get('chartDataHumid') || {\n    humidity: [],\n    time: [],\n    formattedTime: []\n};\n\n// Ensure the structure is intact (in case it was partially overwritten)\nchartDataHumid.humidity = chartDataHumid.humidity || [];\nchartDataHumid.time = chartDataHumid.time || [];\n\n// Access the incoming data\nif (msg.payload && msg.payload.humidity && msg.payload.currenttime) {\n    let humidity = parseFloat(msg.payload.humidity); // Extract and convert the humidity value\n    let timestamp = new Date().getTime(); // Use the currenttime field from the input\n\n    // Convert the Unix timestamp to a human-readable format (optional, for display only)\n    let formattedTime = new Date(timestamp).toLocaleTimeString();  // You can also use toLocaleString() for more detailed format\n\n    // Add the new data point\n    chartDataHumid.humidity.push(humidity);\n    chartDataHumid.time.push(timestamp);  // Store the raw Unix timestamp for correct alignment\n    chartDataHumid.formattedTime.push(formattedTime);  // Store the human-readable time\n\n\n    // Save updated data back to the flow context\n    flow.set('chartDataHumid', chartDataHumid);\n\n    // Format data for the chart node\n    msg.payload = [\n        {\n            series: [\"Humidity\"], // Corrected the label to match the data type\n            data: [chartDataHumid.humidity], // All stored humidity values\n            labels: chartDataHumid.formattedTime// All corresponding time values\n            \n        }\n    ];\n} else {\n    // Log an error if the expected fields are missing\n    node.error(\"Incoming payload is missing 'humidity' or 'currenttime'.\", msg);\n    return null;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 380,
+        "wires": [
+            [
+                "85b46359f173f897"
+            ]
+        ]
+    },
+    {
+        "id": "85b46359f173f897",
+        "type": "ui_chart",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "fc56304804711982",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Humidity Graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1020,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0b5c638c16496bd6",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "0c87c9f1f1046d47",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Reset Temperature Graphs",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "[]",
+        "payloadType": "json",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 440,
+        "y": 1120,
+        "wires": [
+            [
+                "e42d0571f743c033"
+            ]
+        ]
+    },
+    {
+        "id": "e42d0571f743c033",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Reset data",
+        "func": "// Reset the chart data when the button is pressed\nflow.set('chartDataTESTE', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataTemp', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataTempAVG', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 1120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "21412d160b679aa2",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Combine Temperature",
+        "func": "// Extract data from the incoming message\nconst msgPayload = msg.payload;\n\nlet id = msgPayload.id;\nlet temperature = parseFloat(msgPayload.temperature); // Ensure temperature is a number\nlet currentTime = msgPayload.currenttime;\n\nif (id === \"LAU\") {\n    // Multiply the original temperature by 2\n    let updatedTempLAU = temperature * 2;\n\n    // Store updated tempLAU and currenttimeLAU in flow context\n    flow.set(\"tempLAU\", updatedTempLAU);\n    flow.set(\"timeLAU\", currentTime);\n} else if (id === \"ZE\") {\n    // Store tempZE and currenttimeZE in flow context\n    flow.set(\"tempZE\", temperature);\n    flow.set(\"timeZE\", currentTime);\n}\n\n// Retrieve both temperatures and their respective times from flow context\nlet tempLAU = flow.get(\"tempLAU\");\nlet tempZE = flow.get(\"tempZE\");\nlet timeLAU = flow.get(\"timeLAU\");\nlet timeZE = flow.get(\"timeZE\");\n\n// Check if both values and their times are set, and if the times match\nif (tempLAU && tempZE && timeLAU && timeZE && timeLAU === timeZE) {\n    // Combine the two values into a string\n    msg.source = \"combinerTemperature\"; // Add metadata to indicate the source\n    msg.payload = `tempLAU: ${tempLAU}, tempZE: ${tempZE}, time: ${timeLAU}`;\n    return msg;\n}\n\n// If conditions aren't met, do nothing\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 120,
+        "wires": [
+            [
+                "176e0eacf797656c"
+            ]
+        ]
+    },
+    {
+        "id": "176e0eacf797656c",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Average Temperature",
+        "func": "// Ensure that the message originates from the combiner function\nif (msg.source === \"combinerTemperature\") {\n    // Retrieve stored data or initialize if it doesn't exist\n    let chartDataTempAVG = flow.get('chartDataTempAVG') || {\n        temperature: [],\n        time: [],\n        formattedTime: []\n    };\n\n    // Parse incoming data (extract temperatures and time from the string)\n    let input = msg.payload; // Assuming input is a string like \"tempLAU: 18.8, tempZE: 18.8, time: 11:40:34\"\n    let matches = input.match(/tempLAU: ([\\d.]+), tempZE: ([\\d.]+), time: (.+)/);\n\n    if (matches) {\n        // Extract values from the input string\n        let tempLAU = parseFloat(matches[1]);\n        let tempZE = parseFloat(matches[2]);\n        let timestamp = new Date().getTime();\n\n        // Calculate the average temperature\n        let avgTemperature = (tempLAU + tempZE) / 2;\n\n        // Convert the Unix timestamp to a human-readable format (optional, for display only)\n        let formattedTime = new Date(timestamp).toLocaleTimeString();  // You can also use toLocaleString() for more detailed format\n\n        // Add the new data point\n        chartDataTempAVG.temperature.push(avgTemperature);\n        chartDataTempAVG.time.push(timestamp);\n        chartDataTempAVG.formattedTime.push(formattedTime);\n        \n\n        // Save updated data back to the flow context\n        flow.set('chartDataTempAVG', chartDataTempAVG);\n\n        // Format data for the chart node\n        msg.payload = [\n            {\n                series: [\"Average Temperature\"],\n                data: [chartDataTempAVG.temperature], // All stored average temperature values\n                labels: chartDataTempAVG.formattedTime         // All corresponding time values\n            }\n        ];\n\n        return msg;\n    } else {\n        // If the input string doesn't match the expected format, return an error or do nothing\n        node.error(\"Invalid input format\");\n        return null;\n    }\n} else {\n    // Reject messages that are not from the combiner function\n    node.error(\"Input not from the expected source\");\n    return null;\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 120,
+        "wires": [
+            [
+                "ee22a11fc1d32e9b"
+            ]
+        ]
+    },
+    {
+        "id": "ee22a11fc1d32e9b",
+        "type": "ui_chart",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "0c87c9f1f1046d47",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "Average Temperature Graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1180,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b31c33f4bc2e8aa0",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Combine Humidity",
+        "func": "// Extract data from the incoming message\nconst msgPayload = msg.payload;\n\nlet id = msgPayload.id;\nlet humidity = parseFloat(msgPayload.humidity); // Ensure humidity is a number\nlet currentTime = msgPayload.currenttime;\n\nif (id === \"LAU\") {\n        // Multiply the original temperature by 2\n    let updatedHumidityLAU = humidity * 2;\n\n    // Store humidity and currenttime for LAU in flow context\n    flow.set(\"humidityLAU\", updatedHumidityLAU);\n    flow.set(\"timeLAU\", currentTime);\n} else if (id === \"ZE\") {\n    // Store humidity and currenttime for ZE in flow context\n    flow.set(\"humidityZE\", humidity);\n    flow.set(\"timeZE\", currentTime);\n}\n\n// Retrieve both humidity values and their respective times from flow context\nlet humidityLAU = flow.get(\"humidityLAU\");\nlet humidityZE = flow.get(\"humidityZE\");\nlet timeLAU = flow.get(\"timeLAU\");\nlet timeZE = flow.get(\"timeZE\");\n\n// Check if both values and their times are set, and if the times match\nif (humidityLAU && humidityZE && timeLAU && timeZE && timeLAU === timeZE) {\n    // Combine the two values into a string\n    msg.source = \"combinerHumidity\"; // Add metadata to indicate the source\n    msg.payload = `humidityLAU: ${humidityLAU}, humidityZE: ${humidityZE}, time: ${timeLAU}`;\n    return msg;\n}\n\n// If conditions aren't met, do nothing\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 180,
+        "wires": [
+            [
+                "80207b682309cc06"
+            ]
+        ]
+    },
+    {
+        "id": "80207b682309cc06",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Average Humidity",
+        "func": "// Ensure that the message originates from the combiner function\nif (msg.source === \"combinerHumidity\") {\n    // Retrieve stored data or initialize if it doesn't exist\n    let chartDataHumidAVG = flow.get('chartDataHumidAVG') || {\n        humidity: [],\n        time: [],\n        formattedTime: []\n    };\n\n    // Check if 'humidity' and 'time' arrays are properly initialized\n    if (!chartDataHumidAVG.humidity || !Array.isArray(chartDataHumidAVG.humidity)) {\n        chartDataHumidAVG.humidity = [];  // Initialize humidity array if undefined\n    }\n    if (!chartDataHumidAVG.time || !Array.isArray(chartDataHumidAVG.time)) {\n        chartDataHumidAVG.time = [];  // Initialize time array if undefined\n    }\n\n    // Parse incoming data (extract humidity values and time from the string)\n    let input = msg.payload; // Assuming input is a string like \"humidityLAU: 45.5, humidityZE: 55.3, time: 11:40:34\"\n    let matches = input.match(/humidityLAU: ([\\d.]+), humidityZE: ([\\d.]+), time: (.+)/);\n\n    if (matches) {\n        // Extract values from the input string\n        let humidityLAU = parseFloat(matches[1]);\n        let humidityZE = parseFloat(matches[2]);\n        let timestamp = new Date().getTime();\n\n        // Calculate the average humidity\n        let avgHumidity = (humidityLAU + humidityZE) / 2;\n\n        // Time stamp in readable format\n        let formattedTime = new Date(timestamp).toLocaleTimeString();  \n\n        // Add the new data point\n        chartDataHumidAVG.humidity.push(avgHumidity);\n        chartDataHumidAVG.time.push(timestamp);\n        chartDataHumidAVG.formattedTime.push(formattedTime);\n\n\n        // Save updated data back to the flow context\n        flow.set('chartDataHumidAVG', chartDataHumidAVG);\n\n        // Format data for the chart node\n        msg.payload = [\n            {\n                series: [\"Average Humidity\"],\n                data: [chartDataHumidAVG.humidity], // All stored average humidity values\n                labels: chartDataHumidAVG.formattedTime      // All corresponding time values\n            }\n        ];\n\n        return msg;\n    } else {\n        // If the input string doesn't match the expected format, return an error or do nothing\n        node.error(\"Invalid input format\");\n        return null;\n    }\n} else {\n    // Reject messages that are not from the expected source\n    node.error(\"Input not from the expected source\");\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 930,
+        "y": 180,
+        "wires": [
+            [
+                "de60d61f448ab761"
+            ]
+        ]
+    },
+    {
+        "id": "de60d61f448ab761",
+        "type": "ui_chart",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "fc56304804711982",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "Average Humidity Graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "200",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1170,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c652d89f767b97f1",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "fc56304804711982",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Start",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "start",
+        "payloadType": "str",
+        "topic": "/comcs/g45/commands",
+        "topicType": "str",
+        "x": 910,
+        "y": 1100,
+        "wires": [
+            [
+                "140b43f0a2badc92"
+            ]
+        ]
+    },
+    {
+        "id": "837d8e031ef3c01e",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "0c87c9f1f1046d47",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Stop",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "stop",
+        "payloadType": "str",
+        "topic": "/comcs/g45/commands",
+        "topicType": "str",
+        "x": 910,
+        "y": 1160,
+        "wires": [
+            [
+                "68a00e68f7c7e725"
+            ]
+        ]
+    },
+    {
+        "id": "140b43f0a2badc92",
+        "type": "mqtt out",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "7f2d9564175f3903",
+        "x": 1070,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "68a00e68f7c7e725",
+        "type": "mqtt out",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "7f2d9564175f3903",
+        "x": 1070,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "6256584a25dddf37",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Alert Temperature function",
+        "func": "// Extract the data from the incoming message\nconst msgPayload = msg.payload;\n\nlet timestamp = new Date().getTime();\n// Time stamp in readable format\nlet formattedTime = new Date(timestamp).toLocaleTimeString(); \nlet warning = msgPayload; // Time of the alert\nlet symbol = \"⚠️🌡️ \"; // Symbol for the alert\n\n// Create a message with the symbol and time\nmsg.payload = {\n    symbol: symbol,\n    message: `${warning} at ${formattedTime}`\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 460,
+        "wires": [
+            [
+                "6fef0204f6cf4cf6"
+            ]
+        ]
+    },
+    {
+        "id": "6fef0204f6cf4cf6",
+        "type": "ui_template",
+        "z": "e5baf14b09455479",
+        "group": "80e35fb6239c315a",
+        "name": "Max_Temperature_Alert",
+        "order": 1,
+        "width": 6,
+        "height": 4,
+        "format": "<div style=\"font-size: 24px; padding: 10px;\">\n    <h3>{{msg.payload.symbol}}</h3>\n    <p>{{msg.payload.message}}</p>\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1030,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f363c0d48ad0e62e",
+        "type": "mqtt in",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "/comcs/g45/humidityAlert",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "7f2d9564175f3903",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 620,
+        "wires": [
+            [
+                "d65ab83b7aef312e"
+            ]
+        ]
+    },
+    {
+        "id": "9133a93fde9d0a51",
+        "type": "mqtt in",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "/comcs/g45/temperatureDiffAlert",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "7f2d9564175f3903",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 760,
+        "wires": [
+            [
+                "ffb7f08586343230"
+            ]
+        ]
+    },
+    {
+        "id": "a43feb0993a6e2c8",
+        "type": "mqtt in",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "topic": "/comcs/g45/humidityDiffAlert",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "7f2d9564175f3903",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 940,
+        "wires": [
+            [
+                "27d6ffd648896911"
+            ]
+        ]
+    },
+    {
+        "id": "d65ab83b7aef312e",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Alert Humidity function",
+        "func": "// Extract the data from the incoming message\nconst msgPayload = msg.payload;\n\nlet timestamp = new Date().getTime();\n// Time stamp in readable format\nlet formattedTime = new Date(timestamp).toLocaleTimeString();\nlet warning = msgPayload; // Time of the alert\nlet symbol = \"⚠️💧 \"; // Symbol for the alert\n\n// Create a message with the symbol and time\nmsg.payload = {\n    symbol: symbol,\n    message: `${warning} at ${formattedTime}`\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 640,
+        "y": 620,
+        "wires": [
+            [
+                "4d4b95820506ca97"
+            ]
+        ]
+    },
+    {
+        "id": "ffb7f08586343230",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Alert Temperature Difference function",
+        "func": "// Extract the data from the incoming message\nconst msgPayload = msg.payload;\n\nlet timestamp = new Date().getTime();\n// Time stamp in readable format\nlet formattedTime = new Date(timestamp).toLocaleTimeString(); \nlet warning = msgPayload; // Time of the alert\nlet symbol = \"⚠️🌡️ \"; // Symbol for the alert\n\n// Create a message with the symbol and time\nmsg.payload = {\n    symbol: symbol,\n    message: `${warning} at ${formattedTime}`\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 760,
+        "wires": [
+            [
+                "294b612364f8e689"
+            ]
+        ]
+    },
+    {
+        "id": "27d6ffd648896911",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Alert Humidity Difference function",
+        "func": "// Extract the data from the incoming message\nconst msgPayload = msg.payload;\n\nlet timestamp = new Date().getTime();\n// Time stamp in readable format\nlet formattedTime = new Date(timestamp).toLocaleTimeString();\nlet warning = msgPayload; // Time of the alert\nlet symbol = \"⚠️💧 \"; // Symbol for the alert\n\n// Create a message with the symbol and time\nmsg.payload = {\n    symbol: symbol,\n    message: `${warning} at ${formattedTime}`\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 940,
+        "wires": [
+            [
+                "7010cea2fb350947"
+            ]
+        ]
+    },
+    {
+        "id": "4d4b95820506ca97",
+        "type": "ui_template",
+        "z": "e5baf14b09455479",
+        "group": "80e35fb6239c315a",
+        "name": "Max_Humidity_Alert",
+        "order": 3,
+        "width": 6,
+        "height": 4,
+        "format": "<div style=\"font-size: 24px; padding: 10px;\">\n    <h3>{{msg.payload.symbol}}</h3>\n    <p>{{msg.payload.message}}</p>\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1020,
+        "y": 620,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "294b612364f8e689",
+        "type": "ui_template",
+        "z": "e5baf14b09455479",
+        "group": "ff68ebb54b9c64a5",
+        "name": "Temperature_Difference_Alert",
+        "order": 1,
+        "width": 6,
+        "height": 4,
+        "format": "<div style=\"font-size: 24px; padding: 10px;\">\n    <h3>{{msg.payload.symbol}}</h3>\n    <p>{{msg.payload.message}}</p>\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1050,
+        "y": 760,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7010cea2fb350947",
+        "type": "ui_template",
+        "z": "e5baf14b09455479",
+        "group": "ff68ebb54b9c64a5",
+        "name": "Humidity_Difference_Alert",
+        "order": 3,
+        "width": 6,
+        "height": 4,
+        "format": "<div style=\"font-size: 24px; padding: 10px;\">\n    <h3>{{msg.payload.symbol}}</h3>\n    <p>{{msg.payload.message}}</p>\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1030,
+        "y": 940,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ca18679598cee808",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Clear Temp Alert",
+        "func": "if (msg.payload === \"clear\") {\n    msg.payload = { symbol: \"\", message: \"\" };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 520,
+        "wires": [
+            [
+                "6fef0204f6cf4cf6"
+            ]
+        ]
+    },
+    {
+        "id": "3e8353c1befbcdde",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "80e35fb6239c315a",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Clear Temperature Alert",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "clear",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "str",
+        "x": 510,
+        "y": 520,
+        "wires": [
+            [
+                "ca18679598cee808"
+            ]
+        ]
+    },
+    {
+        "id": "a3ab0dd34f6d940b",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Clear Humid Alert",
+        "func": "if (msg.payload === \"clear\") {\n    msg.payload = { symbol: \"\", message: \"\" };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 680,
+        "wires": [
+            [
+                "4d4b95820506ca97"
+            ]
+        ]
+    },
+    {
+        "id": "d410cb14d64cf931",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "80e35fb6239c315a",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Clear Humidity Alert",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "clear",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "str",
+        "x": 480,
+        "y": 680,
+        "wires": [
+            [
+                "a3ab0dd34f6d940b"
+            ]
+        ]
+    },
+    {
+        "id": "efa92b57d04081a6",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Clear TempDiff Alert",
+        "func": "if (msg.payload === \"clear\") {\n    msg.payload = { symbol: \"\", message: \"\" };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 820,
+        "wires": [
+            [
+                "294b612364f8e689"
+            ]
+        ]
+    },
+    {
+        "id": "81fe4e13536d118e",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "ff68ebb54b9c64a5",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Clear Temperature Difference Alert",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "clear",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "str",
+        "x": 480,
+        "y": 820,
+        "wires": [
+            [
+                "efa92b57d04081a6"
+            ]
+        ]
+    },
+    {
+        "id": "629df907488ecfb7",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Clear HumidDiff Alert",
+        "func": "if (msg.payload === \"clear\") {\n    msg.payload = { symbol: \"\", message: \"\" };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 1020,
+        "wires": [
+            [
+                "7010cea2fb350947"
+            ]
+        ]
+    },
+    {
+        "id": "bfa40c087ec88c28",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "ff68ebb54b9c64a5",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Clear Humidity Difference Alert",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "clear",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "str",
+        "x": 470,
+        "y": 1020,
+        "wires": [
+            [
+                "629df907488ecfb7"
+            ]
+        ]
+    },
+    {
+        "id": "8bce7a7ccdaa0126",
+        "type": "ui_button",
+        "z": "e5baf14b09455479",
+        "name": "",
+        "group": "fc56304804711982",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Reset Humidity Graphs",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "[]",
+        "payloadType": "json",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 450,
+        "y": 1180,
+        "wires": [
+            [
+                "40e757ad8bd5573d"
+            ]
+        ]
+    },
+    {
+        "id": "40e757ad8bd5573d",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Reset data",
+        "func": "// Reset the chart data when the button is pressed\n\nflow.set('chartDataHumid', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataHumidAVG', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 1180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b06c282d73b9b8b8",
+        "type": "function",
+        "z": "e5baf14b09455479",
+        "name": "Reset data",
+        "func": "// Reset the chart data when the button is pressed\nflow.set('chartDataTESTE', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataTemp', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataHumid', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataTempAVG', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\nflow.set('chartDataHumidAVG', {\n    temperature: [],\n    time: [],\n    formattedTime: []\n});\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 1260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1ba0c6818d19831d",
+        "type": "ui_spacer",
+        "z": "e5baf14b09455479",
+        "name": "spacer",
+        "group": "81ed3eaf0e2cb408",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "7f2d9564175f3903",
+        "type": "mqtt-broker",
+        "name": "eu.hivemq.cloud",
+        "broker": "370134814ab545c6ae9d743848a77f33.s1.eu.hivemq.cloud",
+        "port": "8883",
+        "tls": "c80603c327360862",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "0c87c9f1f1046d47",
+        "type": "ui_group",
+        "name": "Temperature",
+        "tab": "d3392474a17d244a",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "fc56304804711982",
+        "type": "ui_group",
+        "name": "Humidity",
+        "tab": "d3392474a17d244a",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "80e35fb6239c315a",
+        "type": "ui_group",
+        "name": "Alerts",
+        "tab": "d3392474a17d244a",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "ff68ebb54b9c64a5",
+        "type": "ui_group",
+        "name": "_Alerts_",
+        "tab": "d3392474a17d244a",
+        "order": 4,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "c80603c327360862",
+        "type": "tls-config",
+        "name": "",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": false,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "d3392474a17d244a",
+        "type": "ui_tab",
+        "name": "Dashboard_Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
