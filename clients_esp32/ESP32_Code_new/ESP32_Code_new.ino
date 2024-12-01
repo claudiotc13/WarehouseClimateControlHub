@@ -140,22 +140,14 @@ if (strcmp(comando, "start") == 0) {
 
     char jsonBuffer[256];
 
-    //StaticJsonDocument<200> doc2;
-    //doc2["id"] = "LAU";
-    //doc2["type"] = "WeatherObserved";
-    //doc2["temperature"] = temp;  // Example temperature
-    //doc2["humidity"] = humidade;     // Example humidity
-    //doc2["currenttime"]=tempo_bom;
-
-    //char jsonBuffer2[256];
 
     serializeJson(doc, jsonBuffer);
-    //serializeJson(doc2, jsonBuffer2);
+
 
     Serial.println("mensagem enviada para o broker");
 
     publishMessage("/comcs/g45/humidade", String(jsonBuffer), true);
-     //publishMessage("/comcs/g45/humidade", String(jsonBuffer2), true);
+
  
     //This initializes udp and transfer buffer
     udp.beginPacket(udpAddress, udpPort);
@@ -175,7 +167,7 @@ if (strcmp(comando, "start") == 0) {
   }
 } else if (strcmp(comando, "stop") == 0) {
     Serial.println("Envio de mensagens parado até novo comando");
-    delay(5000);
+    delay(1000);
   }
 
 }
