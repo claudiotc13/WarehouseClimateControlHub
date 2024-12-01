@@ -1,6 +1,10 @@
-# WarehouseClimateControlHubta
+# WarehouseClimateControlHub
 
-# ta bala o repositorio
+This project is an IoT-based solution developed for COMCS.Lda, a company that requires constant monitoring of temperature and humidity across its production, storage, and transportation stages to maintain product quality and ensure customer satisfaction.
+
+The system integrates ESP32 devices with DHT11 sensors, Node-RED, and the MQTT protocol to enable real-time monitoring, data analysis, and alert management. It includes a centralized command center and an alert server, ensuring timely detection and reporting of fluctuations that may compromise product integrity.
+
+![alt text](Fotos/SystemDiagram.png)
 
 # ESP32 Sensors and libraries installation
 
@@ -52,6 +56,27 @@ Make sure the Broker information is correct
 and make sure the udp Address matches the one of your udp server, if you still dont have this address it will be explained in a later part of the setup instructions
 ![alt text](Fotos/Screenshot_13.png)
 
+# UDP Server 
+To be able to make connections to the MQTT server with the UDP server you need to first enable sudo on your virtual machine and then install openssl with the following command:
+- ```>>>: sudo apk add openssl-dev```
+
+After that you need to install the mqtt library, first clone the repository of the library with the following command:
+- ```>>>: sudo git clone https://github.com/eclipse/paho.mqtt.c.git```
+
+Then navigate to the folder where you installed the library and run the following commands:
+- ```>>>: cmake -Bbuild -H. -DPAHO_WITH_SSL=ON -DPAHO_BUILD_STATIC=ON -DPAHO_BUILD_SHARED=ON```
+- ```>>>: cmake --build build/ --target install```
+- 
+ After this you have Paho library installed on your machine.
+ 
+To make the Json parses this project is using the cJson library, but you don´t need to install it because it is already inside the project. If you want to read the documentation of this library you can visit the official github page of cJson:
+- https://github.com/DaveGamble/cJSON
+
+After this to run the UDP server open the folder UDP_server and execute the Makefile inside it with the following command on your terminal inside the folder:
+- ```>>>: make```
+
+After that the project will be built on a main file and you can execute it and run it by the comand:
+- ```>>>: ./main```
 
 
 

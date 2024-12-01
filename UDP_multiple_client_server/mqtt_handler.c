@@ -1,4 +1,3 @@
-// mqtt_handler.c
 #include "mqtt_header.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +5,7 @@
 
 MQTTClient mqttClient;
 
+// Function to publish a message to the MQTT broker
 void publishToMQTT(const char *payload, const char *topic)
 {
   MQTTClient_message pubmsg = MQTTClient_message_initializer;
@@ -19,6 +19,7 @@ void publishToMQTT(const char *payload, const char *topic)
   MQTTClient_waitForCompletion(mqttClient, token, 1000L); // Wait for message delivery
 }
 
+// Function to initialize the MQTT connection
 void initMQTT()
 {
 

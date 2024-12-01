@@ -1,4 +1,3 @@
-// Server side implementation of UDP client-server model
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,11 +9,12 @@
 #include <math.h>
 #include "mqtt_header.h"
 
-#define PORT 8888
-#define MAXLINE 1024
-#define ACK_MESSAGE "ACK"
-#define ARRAY_SIZE 2
+#define PORT 8888         // Port number
+#define MAXLINE 1024      // Maximum length of the message
+#define ACK_MESSAGE "ACK" // Acknowledgment message
+#define ARRAY_SIZE 2      // Size of the sensor data array
 
+// Structure to store the client data
 typedef struct
 {
   int sockfd;
@@ -22,6 +22,7 @@ typedef struct
   char message[MAXLINE];
 } ClientData;
 
+// Structure to store the sensor data
 typedef struct
 {
   char time[20];
@@ -29,25 +30,25 @@ typedef struct
   float humidity;
 } SensorData;
 
-SensorData sensor_data_1[ARRAY_SIZE];
-SensorData sensor_data_2[ARRAY_SIZE];
+SensorData sensor_data_1[ARRAY_SIZE]; // Array to store the last two values sent by arduino1
+SensorData sensor_data_2[ARRAY_SIZE]; // Array to store the last two values sent by arduino2
 
 int sensor_data_index_1 = 0; // Global index for sensor_data_array_1
 int sensor_data_index_2 = 0; // Global index for sensor_data_array_2
 
-int arduino1_connected = 0;
-int arduino2_connected = 0;
-int both_connected = 0;
+int arduino1_connected = 0; // Flag to check if arduino1 is connected
+int arduino2_connected = 0; // Flag to check if arduino2 is connected
+int both_connected = 0;     // Flag to check if both arduinos are connected
 
-void *handle_client(void *arg);
-void *handle_arduino_values(void *arg);
-void send_alert_exceeded_values_temp(float *temp_value);
-void initMQTT();
-void publishToMQTT(const char *payload, const char *topic);
-void send_alert_exceeded_values_hum(float *humidity_value);
-void write_to_sensor_data_1(SensorData *data);
-void write_to_sensor_data_2(SensorData *data);
-void handle_differences(float temp1, float temp2, float hum1, float hum2);
+void *handle_client(void *arg);                                            // Function to handle the data sent by the client
+void *handle_arduino_values(void *arg);                                    // Function to handle the temperature and humidity sent by the arduino sensors
+void send_alert_exceeded_values_temp();                                    // Function to send an alert to the MQTT broker when the temperature values exceed the limits
+void initMQTT();                                                           // Function to initialize the MQTT connection
+void publishToMQTT(const char *payload, const char *topic);                // Function to publish a message to the MQTT broker
+void send_alert_exceeded_values_hum();                                     // Function to send an alert to the MQTT broker when the humidity values exceed the limits
+void write_to_sensor_data_1(SensorData *data);                             // Function to write the data to the sensor_data_1 array
+void write_to_sensor_data_2(SensorData *data);                             // Function to write the data to the sensor_data_2 array
+void handle_differences(float temp1, float temp2, float hum1, float hum2); // Function to handle the differences between the values sent by the two arduinos
 
 // Driver code
 int main()
@@ -84,6 +85,7 @@ int main()
 
   int i = 0;
 
+  // create a thread to handle the values sent by the arduino sensors
   pthread_t handle_values_thread;
   if (pthread_create(&handle_values_thread, NULL, handle_arduino_values, NULL) != 0)
   {
@@ -115,6 +117,7 @@ int main()
     client_data->client_addr = &cliaddr;
     client_data->message[n] = '\0';
 
+    // create a thread to handle the data sent by the client
     pthread_t tid;
     if (pthread_create(&tid, NULL, handle_client, (void *)client_data) != 0)
     {
@@ -132,6 +135,7 @@ int main()
   return 0;
 }
 
+// Thread function to handle the data sent by the client
 void *handle_client(void *arg)
 {
   ClientData *client_data = (ClientData *)arg;
@@ -160,7 +164,7 @@ void *handle_client(void *arg)
     return NULL;
   }
 
-  // get the temperature and humidity values
+  // get the values from the json object
   cJSON *temperature = cJSON_GetObjectItemCaseSensitive(json, "temperature");
   cJSON *humidity = cJSON_GetObjectItemCaseSensitive(json, "humidity");
   cJSON *time = cJSON_GetObjectItemCaseSensitive(json, "currenttime");
@@ -178,6 +182,7 @@ void *handle_client(void *arg)
     printf("Temperature not found or invalid\n");
   }
 
+  // transform the values to float
   if (cJSON_IsString(humidity) && (humidity->valuestring != NULL))
   {
     humidity_value = atof(humidity->valuestring);
@@ -187,6 +192,7 @@ void *handle_client(void *arg)
     printf("Humidity not found or invalid\n");
   }
 
+  // transform the values to string
   if (cJSON_IsString(time) && (time->valuestring != NULL))
   {
     strncpy(time_str, time->valuestring, sizeof(time_str) - 1);
@@ -203,18 +209,22 @@ void *handle_client(void *arg)
     id_str[sizeof(id_str) - 1] = '\0';
   }
 
+  // check which arduino client sent the data
+  // There are two arduinos with ids "LAU" and "ZE"
   if (strcmp(id_str, "LAU") == 0)
   {
-    printf("LAU ENTROU\n");
     arduino1_connected = 1;
     SensorData data;
     strncpy(data.time, time_str, sizeof(data.time) - 1);
     data.time[sizeof(data.time) - 1] = '\0';
+
+    // check if the values exceed the limits
     if (temp_value > 50 || temp_value < 0)
     {
       send_alert_exceeded_values_temp(&temp_value);
     }
 
+    // check if the values exceed the limits
     if (humidity_value > 80 || humidity_value < 20)
     {
       send_alert_exceeded_values_hum(&humidity_value);
@@ -222,29 +232,36 @@ void *handle_client(void *arg)
 
     data.temperature = temp_value;
     data.humidity = humidity_value;
+
+    // write the data to the sensor_data array to later be handled by the handle_arduino_values thread
     write_to_sensor_data_1(&data);
   }
   else if (strcmp(id_str, "ZE") == 0)
   {
-    printf("ZE ENTROU\n");
     arduino2_connected = 1;
     SensorData data;
     strncpy(data.time, time_str, sizeof(data.time) - 1);
     data.time[sizeof(data.time) - 1] = '\0';
+
+    // check if the values exceed the limits
     if (temp_value > 50 || temp_value < 0)
     {
       send_alert_exceeded_values_temp(&temp_value);
     }
 
+    // check if the values exceed the limits
     if (humidity_value > 80 || humidity_value < 20)
     {
       send_alert_exceeded_values_hum(&humidity_value);
     }
     data.temperature = temp_value;
     data.humidity = humidity_value;
+
+    // write the data to the sensor_data array to later be handled by the handle_arduino_values thread
     write_to_sensor_data_2(&data);
   }
 
+  // check if both arduinos are connected to the server
   if (arduino1_connected && arduino2_connected)
   {
     both_connected = 1;
@@ -256,6 +273,8 @@ void *handle_client(void *arg)
   return NULL;
 }
 
+// Thread function to handle the temperature and humidity sent by the arduino sensors
+// written to the sensor_data arrays
 void *handle_arduino_values(void *arg)
 {
   // wait till both arduinos are connected and have sent data
@@ -266,57 +285,59 @@ void *handle_arduino_values(void *arg)
 
   while (1)
   {
+    // with this if statement we can handle all the possible cases of the time values of the two arduinos
+    // if one of the arduinos sends the data before the other, we can still handle the differences
     if (strcmp(sensor_data_1[1].time, sensor_data_2[1].time) == 0)
     {
-      printf("first if\n");
       handle_differences(sensor_data_1[1].temperature, sensor_data_2[1].temperature, sensor_data_1[1].humidity, sensor_data_2[1].humidity);
     }
     else if (strcmp(sensor_data_1[1].time, sensor_data_2[0].time) == 0)
     {
-      printf("second if\n");
       handle_differences(sensor_data_1[1].temperature, sensor_data_2[0].temperature, sensor_data_1[1].humidity, sensor_data_2[0].humidity);
     }
-    else if (strcmp(sensor_data_1[0].time, sensor_data_2[1].time) > 0)
+    else if (strcmp(sensor_data_1[0].time, sensor_data_2[1].time) == 0)
     {
-      printf("third if\n");
       handle_differences(sensor_data_1[0].temperature, sensor_data_2[1].temperature, sensor_data_1[0].humidity, sensor_data_2[1].humidity);
-    }
-    else if (strcmp(sensor_data_1[0].time, sensor_data_2[0].time) > 0)
-    {
-      printf("fourth if\n");
-      handle_differences(sensor_data_1[0].temperature, sensor_data_2[0].temperature, sensor_data_1[0].humidity, sensor_data_2[0].humidity);
     }
   }
 
   return NULL;
 }
 
+// Function to write the data to the sensor_data_1 array
+// to keep track of the last two values sent by the arduino
 void write_to_sensor_data_1(SensorData *data)
 {
   sensor_data_1[0] = sensor_data_1[1];
   sensor_data_1[1] = *data;
 }
 
+// Function to write the data to the sensor_data_2 array
+// to keep track of the last two values sent by the arduino
 void write_to_sensor_data_2(SensorData *data)
 {
   sensor_data_2[0] = sensor_data_2[1];
   sensor_data_2[1] = *data;
 }
 
-void send_alert_exceeded_values_temp(float *temp_value)
+// Function to send an alert to the MQTT broker when the temperature values exceed the limits
+void send_alert_exceeded_values_temp()
 {
-  char alert_message[50] = "Temperature value exceeded the limits: \0";
+  char alert_message[50] = "Temperature value exceeded the limits\0";
   char topic[50] = "/comcs/g45/temperatureAlert";
   publishToMQTT(&alert_message, &topic);
 }
 
-void send_alert_exceeded_values_hum(float *humidity_value)
+// Function to send an alert to the MQTT broker when the humidity values exceed the limits
+void send_alert_exceeded_values_hum()
 {
-  char alert_message[50] = "Humidity value exceeded the limits: \0";
+  char alert_message[50] = "Humidity value exceeded the limits\0";
   char topic[50] = "/comcs/g45/humidityAlert";
   publishToMQTT(&alert_message, &topic);
 }
 
+// Function to handle the differences between the values sent by the two arduinos
+// and send an alert to the MQTT broker if the difference exceeds a certain value
 void handle_differences(float temp1, float temp2, float hum1, float hum2)
 {
   char topicTemp[50] = "/comcs/g45/temperatureDiffAlert";
